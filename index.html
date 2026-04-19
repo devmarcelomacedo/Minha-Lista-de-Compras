@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista de Compras</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial;
+}
+
+body {
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    color: #fff;
+    padding: 20px;
+}
+
+.container {
+    max-width: 500px;
+    margin: auto;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.input-area {
+    display: flex;
+    gap: 10px;
+}
+
+input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+}
+
+button {
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #00e676;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+ul {
+    list-style: none;
+    margin-top: 20px;
+}
+
+li {
+    background: rgba(255,255,255,0.1);
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+li span {
+    flex: 1;
+    cursor: pointer;
+}
+
+.comprado {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.actions button {
+    margin-left: 5px;
+    background: #ffca28;
+}
+
+.delete {
+    background: #ff5252 !important;
+    color: #fff;
+}
+
+.history-btn {
+    margin-top: 10px;
+    width: 100%;
+    background: #40c4ff;
+}
+
+.clear-history {
+    background: #ff5252;
+    color: #fff;
+}
+
+/* CALCULADORA */
+.calc {
+    margin-top: 20px;
+    background: rgba(0,0,0,0.3);
+    padding: 15px;
+    border-radius: 15px;
+}
+
+#calcDisplay {
+    width: 100%;
+    padding: 12px;
+    font-size: 18px;
+    border-radius: 10px;
+    border: none;
+    margin-bottom: 10px;
+    text-align: right;
+}
+
+.calc-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.calc-buttons button {
+    background: #fff;
+    color: #000;
+}
+
+/* HISTÓRICO */
+.history {
+    margin-top: 20px;
+    display: none;
+}
+
+.history-item {
+    background: rgba(0,0,0,0.3);
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+/* BOTÃO APOIO */
+.btn-apoio {
+    display: block;
+    margin-top: 25px;
+    text-align: center;
+    padding: 14px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 16px;
+    color: #fff;
+    background: linear-gradient(135deg, #00c853, #00e676);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: 0.3s;
+}
+
+.btn-apoio:hover {
+    transform: scale(1.05);
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h1>🛒 Lista de Compras</h1>
+
+<div class="input-area">
+    <input type="text" id="itemInput" placeholder="Digite um produto...">
+    <button onclick="addItem()">Adicionar</button>
+</div>
+
+<ul id="list"></ul>
+
+<button class="history-btn" onclick="saveList()">💾 Salvar Lista</button>
+<button class="history-btn" onclick="toggleHistory()">📜 Ver Histórico</button>
+<button class="history-btn clear-history" onclick="clearHistory()">🗑️ Apagar Histórico</button>
+
+<!-- CALCULADORA -->
+<div class="calc">
+    <h2 style="text-align:center;">🧮 Calculadora</h2>
+    <input type="text" id="calcDisplay" readonly>
+
+    <div class="calc-buttons">
+        <button onclick="calc('7')">7</button>
+        <button onclick="calc('8')">8</button>
+        <button onclick="calc('9')">9</button>
+        <button onclick="calc('/')">÷</button>
+
+        <button onclick="calc('4')">4</button>
+        <button onclick="calc('5')">5</button>
+        <button onclick="calc('6')">6</button>
+        <button onclick="calc('*')">×</button>
+
+        <button onclick="calc('1')">1</button>
+        <button onclick="calc('2')">2</button>
+        <button onclick="calc('3')">3</button>
+        <button onclick="calc('-')">−</button>
+
+        <button onclick="calc('0')">0</button>
+        <button onclick="calc('.')">.</button>
+        <button onclick="calculate()">=</button>
+        <button onclick="calc('+')">+</button>
+
+        <button onclick="backspace()" style="background:#ff9800;">←</button>
+        <button onclick="clearCalc()" style="grid-column: span 3; background:#ff5252; color:#fff;">C</button>
+    </div>
+</div>
+
+<!-- BOTÃO DE APOIO -->
+<a href="https://mpago.la/2kS79UE" target="_blank" class="btn-apoio">
+    💙 Apoiar o Projeto
+</a>
+
+<div class="history" id="history"></div>
+
+</div>
+
+<script>
+let list = JSON.parse(localStorage.getItem("listaAtual")) || [];
+let history = JSON.parse(localStorage.getItem("historicoListas")) || [];
+
+function renderList() {
+    const ul = document.getElementById("list");
+    ul.innerHTML = "";
+
+    list.forEach((item, index) => {
+        const li = document.createElement("li");
+
+        const span = document.createElement("span");
+        span.textContent = item.text;
+        if (item.done) span.classList.add("comprado");
+
+        span.onclick = () => toggleItem(index);
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "✏️";
+        editBtn.onclick = () => editItem(index);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "🗑️";
+        deleteBtn.className = "delete";
+        deleteBtn.onclick = () => deleteItem(index);
+
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+
+        li.appendChild(span);
+        li.appendChild(actions);
+
+        ul.appendChild(li);
+    });
+
+    localStorage.setItem("listaAtual", JSON.stringify(list));
+}
+
+function addItem() {
+    const input = document.getElementById("itemInput");
+    if (input.value.trim() === "") return;
+
+    list.push({ text: input.value, done: false });
+    input.value = "";
+    renderList();
+}
+
+function toggleItem(index) {
+    list[index].done = !list[index].done;
+    renderList();
+}
+
+function deleteItem(index) {
+    list.splice(index, 1);
+    renderList();
+}
+
+function editItem(index) {
+    const novo = prompt("Editar item:", list[index].text);
+    if (novo && novo.trim() !== "") {
+        list[index].text = novo;
+        renderList();
+    }
+}
+
+function saveList() {
+    if (list.length === 0) return;
+
+    history.push({
+        date: new Date().toLocaleString(),
+        items: [...list]
+    });
+
+    localStorage.setItem("historicoListas", JSON.stringify(history));
+    alert("Lista salva!");
+}
+
+function toggleHistory() {
+    const div = document.getElementById("history");
+    div.style.display = div.style.display === "none" ? "block" : "none";
+    renderHistory();
+}
+
+function renderHistory() {
+    const div = document.getElementById("history");
+    div.innerHTML = "";
+
+    history.forEach(h => {
+        const box = document.createElement("div");
+        box.className = "history-item";
+
+        let html = `<strong>${h.date}</strong><ul>`;
+        h.items.forEach(i => {
+            html += `<li>${i.text} ${i.done ? "✔️" : ""}</li>`;
+        });
+        html += "</ul>";
+
+        box.innerHTML = html;
+        div.appendChild(box);
+    });
+}
+
+function clearHistory() {
+    if (confirm("Tem certeza que deseja apagar todo o histórico?")) {
+        history = [];
+        localStorage.removeItem("historicoListas");
+        renderHistory();
+        alert("Histórico apagado!");
+    }
+}
+
+/* CALCULADORA */
+function calc(valor) {
+    document.getElementById("calcDisplay").value += valor;
+}
+
+function calculate() {
+    try {
+        let result = eval(document.getElementById("calcDisplay").value);
+        document.getElementById("calcDisplay").value = result;
+    } catch {
+        alert("Erro no cálculo");
+    }
+}
+
+function clearCalc() {
+    document.getElementById("calcDisplay").value = "";
+}
+
+function backspace() {
+    let display = document.getElementById("calcDisplay");
+    display.value = display.value.slice(0, -1);
+}
+
+renderList();
+</script>
+
+</body>
+</html>
